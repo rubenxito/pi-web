@@ -528,6 +528,8 @@ export const zhTWLocale: LocalePlugin = {
     "chat.extensionMaximize": "放大",
     "chat.extensionRestoreSize": "還原尺寸",
     "chat.extensionMoreWaiting": "還有 {count} 個",
+    "chat.permissionTitle": "需要授權",
+    "chat.permissionSubagent": "來自子代理",
     "chat.cancel": "取消",
     "chat.confirm": "確認",
     "chat.submit": "送出",

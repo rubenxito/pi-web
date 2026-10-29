@@ -7,6 +7,10 @@ import type { AgentMessage, AssistantContentBlock, AssistantMessage, BashExecuti
 import { normalizeCustomPanelLines } from "@/lib/ansi";
 import { splitNoticeText } from "@/lib/notice-text";
 import { EXTENSION_DIALOG_BASE_WIDTH, fitExtensionDialogWidth } from "@/lib/extension-dialog-fit";
+import { parsePermissionRequest } from "@/lib/permission-payload";
+import { PermissionDialogView, PermissionReasonView, isPermissionDenyReasonInput } from "@/components/PermissionDialogView";
+import { useDialogArming } from "@/hooks/useDialogArming";
+import { useDialogDrag } from "@/hooks/useDialogDrag";
 import { asBracketedPaste, toTerminalKeyData } from "@/lib/terminal-input";
 import { collapsesProcessDetails, countToolCallBlocks, getDisplayableAssistantBlocks, hasAssistantAnswer, isHiddenCustomMessage, isMessageGroupAnchor, splitFinalAssistantBlocks } from "@/lib/message-display";
 import { extractTurnWrittenFiles, type WrittenFile } from "@/lib/turn-written-files";
@@ -309,6 +313,9 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
   // Only whether a reply is streaming and has content yet: the chunks themselves
   // re-render StreamingReply alone.
   const isStreaming = useStreamingSelector(streamingStore, selectIsStreaming);
+  // A permission-system ask (structured card) or some other extension's dialog:
+  // parsed once per queue head; null keeps the generic dialog rendering.
+  const extensionDialogParsed = extensionDialog ? parsePermissionRequest(extensionDialog) : null;
   const hasStreamingContent = useStreamingSelector(streamingStore, selectHasStreamingContent);
   const getStreamingMessage = useCallback(() => streamingStore.getState().streamingMessage, [streamingStore]);
   const sessionBusy = agentRunning || bashRunning;
@@ -1077,7 +1084,11 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
 
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         {extensionDialog && (
-          <ExtensionDialog key={extensionDialog.id} request={extensionDialog} waitingCount={waitingExtensionDialogCount} onRespond={respondToExtensionUi} />
+          extensionDialog.method === "input" && isPermissionDenyReasonInput(extensionDialog)
+            ? <PermissionReasonView key={extensionDialog.id} request={extensionDialog} waitingCount={waitingExtensionDialogCount} onRespond={(_request, response) => respondToExtensionUi(extensionDialog, response)} />
+            : extensionDialogParsed
+              ? <PermissionDialogView key={extensionDialog.id} request={extensionDialog} parsed={extensionDialogParsed} waitingCount={waitingExtensionDialogCount} onRespond={(_request, response) => respondToExtensionUi(extensionDialog, response)} />
+              : <ExtensionDialog key={extensionDialog.id} request={extensionDialog} waitingCount={waitingExtensionDialogCount} onRespond={respondToExtensionUi} />
         )}
         {extensionCustomUi && (
           <ExtensionCustomPanel key={extensionCustomUi.id} request={extensionCustomUi} waitingCount={waitingExtensionCustomUiCount} onInput={sendExtensionCustomInput} />

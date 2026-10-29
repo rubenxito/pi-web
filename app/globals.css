@@ -2783,3 +2783,23 @@ span.token.table {
     display: none !important;
   }
 }
+
+/* ── Permission dialog buttons (components/PermissionDialogView.tsx) ── */
+/* Inline styles cannot :hover, so the buttons' fill/border live here and the
+   component attaches the class; the tints are the chat's own green/red. */
+.perm-approve-solid { background: rgba(34, 197, 94, 0.12); }
+.perm-approve-solid:hover { background: rgba(34, 197, 94, 0.22); }
+.perm-approve-line {
+  background: transparent;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+.perm-approve-line:hover { background: rgba(34, 197, 94, 0.12); }
+.perm-deny-solid { background: rgba(248, 113, 113, 0.12); }
+.perm-deny-solid:hover { background: rgba(248, 113, 113, 0.22); }
+.perm-deny-line {
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+.perm-deny-line:hover { background: rgba(248, 113, 113, 0.12); }
+.perm-neutral { background: var(--bg-hover); }
+.perm-neutral:hover { background: var(--bg-selected); }

@@ -528,6 +528,8 @@ export const enLocale: LocalePlugin = {
     "chat.extensionMaximize": "Maximize",
     "chat.extensionRestoreSize": "Restore size",
     "chat.extensionMoreWaiting": "+{count} more",
+    "chat.permissionTitle": "Permission required",
+    "chat.permissionSubagent": "from a subagent",
     "chat.cancel": "Cancel",
     "chat.confirm": "Confirm",
     "chat.submit": "Submit",
