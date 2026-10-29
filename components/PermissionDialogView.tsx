@@ -333,7 +333,7 @@ export const PermissionDialogView = memo(function PermissionDialogView({
           {[...parsed.details, ...parsed.evidence].map((fact, index) => (
             <div key={index} style={{ display: "flex", gap: 8, fontSize: 12, lineHeight: 1.5, alignItems: "baseline" }}>
               <span style={{ color: "color-mix(in srgb, var(--text-dim) 55%, var(--bg))", flexShrink: 0, minWidth: 90 }}>{fact.label}</span>
-              <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{fact.value}</span>
+              <span style={{ color: "var(--text)", fontFamily: "var(--font-mono)", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{fact.value}</span>
             </div>
           ))}
         </div>
