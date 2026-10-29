@@ -192,6 +192,23 @@ export const PermissionDialogView = memo(function PermissionDialogView({
 
   const submitOption = (option: string) => onRespond(request, { value: option });
 
+  // The button classes ship with the component: a <style> tag cannot go stale
+  // the way an appended rule in globals.css did (Turbopack occasionally
+  // misses the invalidation, and machines without the lockfile may resolve a
+  // different build chain — both bit us). Duplicate tags are harmless.
+  const hoverStyles = `
+    .perm-approve-solid { background: rgba(34, 197, 94, 0.12); }
+    .perm-approve-solid:hover { background: rgba(34, 197, 94, 0.22); }
+    .perm-approve-line { background: transparent; border: 1px solid rgba(34, 197, 94, 0.35) !important; }
+    .perm-approve-line:hover { background: rgba(34, 197, 94, 0.12); }
+    .perm-deny-solid { background: rgba(248, 113, 113, 0.12); }
+    .perm-deny-solid:hover { background: rgba(248, 113, 113, 0.22); }
+    .perm-deny-line { background: transparent; border: 1px solid rgba(248, 113, 113, 0.35) !important; }
+    .perm-deny-line:hover { background: rgba(248, 113, 113, 0.12); }
+    .perm-neutral { background: var(--bg-hover); }
+    .perm-neutral:hover { background: var(--bg-selected); }
+  `;
+
   return (
     <div
       onKeyDown={(event) => {
@@ -212,6 +229,7 @@ export const PermissionDialogView = memo(function PermissionDialogView({
         pointerEvents: "none",
       }}
     >
+      <style>{hoverStyles}</style>
       <div
         ref={dialogRef}
         role="dialog"
@@ -453,6 +471,13 @@ export const PermissionReasonView = memo(function PermissionReasonView({
 
   const denyLabel = request.title.split("\n").find((line) => line.startsWith("Share why")) ?? "Permission Required";
 
+  const hoverStyles = `
+    .perm-deny-solid { background: rgba(248, 113, 113, 0.12); }
+    .perm-deny-solid:hover { background: rgba(248, 113, 113, 0.22); }
+    .perm-neutral { background: var(--bg-hover); }
+    .perm-neutral:hover { background: var(--bg-selected); }
+  `;
+
   return (
     <div
       onKeyDown={(event) => {
@@ -473,6 +498,7 @@ export const PermissionReasonView = memo(function PermissionReasonView({
         pointerEvents: "none",
       }}
     >
+      <style>{hoverStyles}</style>
       <div
         ref={dialogRef}
         role="dialog"
