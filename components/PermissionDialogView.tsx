@@ -36,8 +36,17 @@ const CATEGORY_LABEL: Record<string, string> = {
   other: "tool",
 };
 
+/** The one warning tint: the marked unit inside the command, and any path
+ *  that leaves the project. Mixed with --text so it stays readable in both
+ *  light and dark themes. */
+const WARN_TEXT = "color-mix(in srgb, #f59e0b 55%, var(--text))";
+/** The chat's own green/red tints, mixed with --text so a button label stays
+ *  readable on a pale fill in the light theme. */
+const APPROVE_TEXT = "color-mix(in srgb, #22c55e 70%, var(--text))";
+const DENY_TEXT = "color-mix(in srgb, #f87171 70%, var(--text))";
+
 /** Wraps each flagged occurrence inside the main value (what the TUI paints). */
-function FlaggedText({ text, flagged, color }: { text: string; flagged: readonly string[]; color: string }) {
+function FlaggedText({ text, flagged }: { text: string; flagged: readonly string[] }) {
   const parts = useMemo(() => {
     if (flagged.length === 0) return [{ text, flagged: false }];
     type Part = { text: string; flagged: boolean };
@@ -62,7 +71,7 @@ function FlaggedText({ text, flagged, color }: { text: string; flagged: readonly
     <>
       {parts.map((part, index) =>
         part.flagged
-          ? <span key={index} style={{ fontWeight: 700, borderBottom: `2px solid ${color}` }}>{part.text}</span>
+          ? <span key={index} style={{ fontWeight: 700, color: WARN_TEXT }}>{part.text}</span>
           : <span key={index}>{part.text}</span>,
       )}
     </>
@@ -173,7 +182,12 @@ export const PermissionDialogView = memo(function PermissionDialogView({
     pointerEvents: "auto",
     // Maximize fills the chat pane (width and height), so it always reads as a
     // deliberate layout change; the content area takes the freed height.
-    ...(full ? { width: "100%", height: "100%", maxHeight: "100%" } : { width: "min(640px, 100%)", maxHeight: "min(760px, 100%)" }),
+    ...(full
+      ? { width: "100%", height: "100%", maxHeight: "100%" }
+      // Content-sized, floored so a short button set does not collapse it, and
+      // capped in px: CSS sizes from the text's *unwrapped* width, so without a
+      // cap a long command always stretches the card to the whole frame.
+      : { width: "fit-content", minWidth: "min(420px, 100%)", maxWidth: "min(800px, 100%)", maxHeight: "min(760px, 100%)" }),
     display: "flex",
     flexDirection: "column",
     border: "1px solid var(--border)",
@@ -251,7 +265,7 @@ export const PermissionDialogView = memo(function PermissionDialogView({
               </span>
             )}
             {parsed.surface && (
-              <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
+              <span style={{ fontSize: 11, lineHeight: 1, alignSelf: "center", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
                 {parsed.surface}
               </span>
             )}
@@ -315,7 +329,8 @@ export const PermissionDialogView = memo(function PermissionDialogView({
             <div
               ref={valueRef}
               style={{
-                // bar — the value speaks for itself.
+                // Fills the card the buttons decided, and wraps inside it.
+                maxWidth: "100%",
                 fontFamily: "var(--font-mono)",
                 fontSize: 14,
                 lineHeight: 1.5,
@@ -332,7 +347,7 @@ export const PermissionDialogView = memo(function PermissionDialogView({
             >
               {parsed.inputPath ? (
                 <>
-                  <FlaggedText text={parsed.inputPath} flagged={parsed.flagged} color={`var(--perm-${parsed.category}-fg, var(--text))`} />
+                  <FlaggedText text={parsed.inputPath} flagged={parsed.flagged} />
                   {parsed.inputInfo && (
                     <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
                       {parsed.inputInfo}
@@ -340,18 +355,20 @@ export const PermissionDialogView = memo(function PermissionDialogView({
                   )}
                 </>
               ) : (
-                <FlaggedText text={parsed.mainValue} flagged={parsed.flagged} color={`var(--perm-${parsed.category}-fg, var(--text))`} />
+                <FlaggedText text={parsed.mainValue} flagged={parsed.flagged} />
               )}
             </div>
           )}
 
           {/* One dict, one style: the remaining facts in payload order,
               labels sans, values mono — repeated `external path` entries
-              simply repeat as rows, verbatim. */}
+              simply repeat as rows, verbatim. A path that leaves the project
+              is the one thing worth spotting here, so it carries the warning
+              tint; everything else stays in the text colour. */}
           {[...parsed.details, ...parsed.evidence].map((fact, index) => (
             <div key={index} style={{ display: "flex", gap: 8, fontSize: 12, lineHeight: 1.5, alignItems: "baseline" }}>
               <span style={{ color: "color-mix(in srgb, var(--text-dim) 55%, var(--bg))", flexShrink: 0, minWidth: 90 }}>{fact.label}</span>
-              <span style={{ color: "var(--text)", fontFamily: "var(--font-mono)", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{fact.value}</span>
+              <span style={{ color: fact.label === "external path" ? WARN_TEXT : "var(--text)", fontFamily: "var(--font-mono)", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{fact.value}</span>
             </div>
           ))}
         </div>
@@ -365,20 +382,26 @@ export const PermissionDialogView = memo(function PermissionDialogView({
               <button
                 key={option}
                 onClick={() => submitOption(option)}
+                title={option}
                 className={index === 0 ? "perm-approve-solid" : "perm-approve-line"}
                 style={{
                   padding: "7px 12px",
                   borderRadius: 6,
                   // Fill/border live in the class (inline styles cannot :hover):
                   // primary option filled, long session grants outlined.
-                  color: "var(--text)",
+                  color: APPROVE_TEXT,
                   fontWeight: 500,
                   fontSize: 12.5,
                   cursor: "pointer",
                   textAlign: "left",
                   width: "fit-content",
                   maxWidth: "100%",
-                  overflowWrap: "anywhere",
+                  // One line per button: a long session-grant label elides
+                  // instead of wrapping, so the card's height stays put. The
+                  // full string is the title (and still what gets sent back).
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   minHeight: 34,
                 }}
               >
@@ -391,18 +414,21 @@ export const PermissionDialogView = memo(function PermissionDialogView({
               <button
                 key={option}
                 onClick={() => submitOption(option)}
+                title={option}
                 className={index === 0 ? "perm-deny-solid" : "perm-deny-line"}
                 style={{
                   padding: "7px 12px",
                   borderRadius: 6,
-                  color: "var(--text)",
+                  color: DENY_TEXT,
                   fontWeight: 500,
                   fontSize: 12.5,
                   cursor: "pointer",
                   textAlign: "left",
                   width: "fit-content",
                   maxWidth: "100%",
-                  overflowWrap: "anywhere",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   minHeight: 34,
                 }}
               >

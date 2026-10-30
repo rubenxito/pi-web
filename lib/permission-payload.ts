@@ -45,8 +45,9 @@ export interface ParsedPermissionRequest {
   /** The trailing caption of that preview, e.g. `2 lines, 107 characters`. */
   inputInfo: string | null;
   /**
-   * Strings to highlight inside `mainValue`: for a bash ask that escaped the
-   * working directory, the external paths the rule fired on (what the TUI
+   * Strings to highlight inside `mainValue`: the unit the rule fired on when
+   * the ask is about one unit of a longer command line, plus — for a bash ask
+   * that escaped the working directory — the external paths (what the TUI
    * paints; the select fallback drops the paint). Empty otherwise.
    */
   flagged: string[];
@@ -151,9 +152,27 @@ export function parsePermissionRequest(request: ExtensionUiRequest): ParsedPermi
   const toolFact = core.find((fact) => fact.label === "tool");
   const tool = toolFact ? stripInvokedAs(toolFact.value) : null;
 
-  const flagged = evidence
-    .filter((fact) => fact.label === "external path" && fact.value !== "")
-    .map((fact) => fact.value);
+  // A bash ask rules on one unit of a longer command line, and says so: the
+  // whole line arrives as `full command` evidence. The unit alone is the least
+  // representative thing to anchor on — approving runs the entire line — so
+  // the line becomes the main value with the unit marked inside it, and the
+  // now-duplicated evidence row is dropped.
+  const fullCommand = evidence.find((fact) => fact.label === "full command");
+  const promoted = fullCommand !== undefined && main !== null && fullCommand.value !== main.value
+    ? fullCommand
+    : null;
+  if (promoted) {
+    evidence.splice(evidence.indexOf(promoted), 1);
+  }
+
+  const flagged = [
+    // The unit may have been soft-wrapped inside the full command; it then
+    // matches nothing and simply renders unmarked rather than wrongly marked.
+    ...(promoted !== null && main !== null ? [main.value] : []),
+    ...evidence
+      .filter((fact) => fact.label === "external path" && fact.value !== "")
+      .map((fact) => fact.value),
+  ];
 
   // A write/edit ask's `input` fact is a preview sentence: `for '<path>'
   // (<info>)`. The path is the decision-relevant part; the parenthesis is a
@@ -167,7 +186,7 @@ export function parsePermissionRequest(request: ExtensionUiRequest): ParsedPermi
     tool,
     category: classify(tool, main?.label ?? null, surface),
     mainLabel: main?.label ?? null,
-    mainValue: main?.value ?? null,
+    mainValue: promoted?.value ?? main?.value ?? null,
     inputPath: inputMatch?.[1] ?? null,
     inputInfo: inputMatch?.[2] ?? null,
     flagged,
