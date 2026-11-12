@@ -51,6 +51,47 @@ test("lightweight source rows are skipped for highlighted, diff, and preview vie
   assert.equal(render(large, "source", false, false, true)[0].props.children[1].props.style.whiteSpace, "pre-wrap");
 });
 
+test("the diff view wraps when the viewer wraps, and the key reaches the diff", () => {
+  const diffView = source.slice(source.indexOf("function DiffView"), source.indexOf("function ImageViewer"));
+  assert.notEqual(source.indexOf("function DiffView"), -1);
+
+  // Wrapped: the box stops being the widest line's width and the row's text
+  // column gives way instead of pushing a horizontal scrollbar.
+  assert.match(diffView, /width: wrapLines \? "100%" : "max-content"/);
+  assert.match(diffView, /whiteSpace: wrapLines \? "pre-wrap" : "pre"/);
+  assert.match(diffView, /overflowWrap: wrapLines \? "anywhere" : "normal"/);
+  assert.match(diffView, /flexShrink: wrapLines \? 1 : 0/);
+  // Unwrapped stays exactly as before: one line per row, sideways scroll. The
+  // +/- marker column never shrinks either way.
+  assert.match(diffView, /padding: "0 6px",[\s\S]{0,160}flexShrink: 0/);
+  assert.match(source, /<MemoizedDiffView[\s\S]{0,200}patch=\{gitDiff\.patch!\}[\s\S]{0,200}wrapLines=\{wrapLines\}[\s\S]{0,200}language=\{language\}[\s\S]{0,200}prismReady=\{prismReady\}[\s\S]{0,200}isDark=\{isDark\}[\s\S]{0,200}\/>/);
+
+  // The wrap control is offered for the diff as well as the source, never for a
+  // rendered preview (markdown, HTML, table), where there are no lines to wrap.
+  assert.match(source, /\(effectiveDisplayMode === "source" \|\| effectiveDisplayMode === "diff"\) && !isBinary/);
+});
+
+test("a highlighted diff line keeps the row's line box, wrap and background", () => {
+  const lineCode = source.slice(source.indexOf("function DiffLineCode"), source.indexOf("function DiffView"));
+  assert.notEqual(source.indexOf("function DiffLineCode"), -1);
+  const customStyle = lineCode.slice(lineCode.indexOf("customStyle={{"), lineCode.indexOf("}}", lineCode.indexOf("customStyle={{")));
+  // The theme's <pre> rules land on the inline wrapper: vs draws a border, both
+  // set their own font and `white-space: pre`, which grew every row by a pixel
+  // or two and kept a wrapped long line on one row.
+  for (const rule of [/border: 0/, /fontFamily: "inherit"/, /lineHeight: "inherit"/, /whiteSpace: "inherit"/]) {
+    assert.match(customStyle, rule);
+  }
+  // vs colors <pre> with backgroundColor: the shorthand beside it left a white
+  // box behind each line after a dark-to-light switch (as #1060 in the source view).
+  assert.match(customStyle, /backgroundColor: "transparent"/);
+  assert.doesNotMatch(customStyle, /\bbackground:/);
+  // The code span's own white-space comes from the highlighter.
+  assert.match(lineCode, /wrapLongLines=\{wrapLines\}/);
+  // Unrelated renders reuse the tokens instead of running Prism on every line.
+  assert.match(source, /const DiffLineCode = memo\(function DiffLineCode/);
+  assert.match(source, /const MemoizedDiffView = memo\(DiffView\);/);
+});
+
 test("partly loaded HTML previews up to the HTML cap; partly loaded markdown does not", () => {
   const start = source.indexOf("  const hasPreview = ");
   const statement = source.slice(start, source.indexOf(";\n", start) + 1);

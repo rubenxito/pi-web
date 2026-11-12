@@ -63,8 +63,9 @@ type SessionRow = Extract<SidebarRow, { kind: "session" }>;
 
 /**
  * A request to bring one row into view, made by the parent after a change
- * that puts it somewhere the user is not looking (a fork's new row, a moved
- * group). Until it is handled the row is kept mounted. It is handled once:
+ * that puts it somewhere the user may not be looking (the row of a session
+ * just opened, however it was opened; a moved group). Until it is handled
+ * the row is kept mounted. It is handled once:
  * scrolled to when its row is in the rows, or dropped (revealStep(): its row
  * missed REVEAL_MAX_MISSES rows updates, or it is older than
  * REVEAL_EXPIRY_MS), so it never fires later, when that row shows up for
@@ -80,8 +81,12 @@ export interface SessionTreeReveal {
   at: number;
   /** Any row's key: a session row, a group header. */
   rowKey: string;
-  /** "start": the row goes to the top (a group header with its rows below it); else centred when out of view. */
-  block?: "start";
+  /**
+   * "start": the row goes to the top (a group header with its rows below it);
+   * "nearest": a row partly in view scrolls only as far as it takes to show
+   * it whole; else centred when out of view (revealScrollTop()).
+   */
+  block?: "start" | "nearest";
   /**
    * Also focus the row's first control once it is on the page: when focus has
    * fallen to <body>, or when this says the element that has it may give it
@@ -128,6 +133,8 @@ export interface SessionTreeProps {
   /** A group's "+": a new session in that project at once. */
   onGroupNew(project: SidebarProject): void;
   onGroupMenu(project: SidebarProject, opener: HTMLElement): void;
+  /** An unpinned empty group's "Pin to keep": without sessions, only a pin keeps it listed. */
+  onPinEmptyGroup(project: SidebarProject): void;
   /** An archive header's toggle; `all` (Alt+click): every archive group follows this one. */
   onToggleArchiveGroup?(projectKey: string, all: boolean): void;
   /** An archive header's ⋯: Restore all, Delete…. */
@@ -391,7 +398,7 @@ export function SessionTree(props: SessionTreeProps): ReactNode {
     }
   }, [visibleIndices]);
 
-  const hasTreeRows = rows.some((row) => row.kind === "session" || row.kind === "group");
+  const hasTreeRows = rows.some((row) => row.kind === "session" || row.kind === "group" || row.kind === "archive-group");
   const showEmpty = !loading && !error && emptyLabel !== null && !hasTreeRows;
   // While dragging: the group's block is dimmed in place (groups never fold
   // up under the pointer), a line marks the drop, and a pill with the
@@ -773,7 +780,8 @@ function RenameInput({
   );
 }
 
-function DeleteConfirm({
+/** A row's delete confirmation; also a side chat's in the Agents switcher (AgentSessionPanel). */
+export function DeleteConfirm({
   label,
   deleteLabel,
   cancelLabel,
@@ -1062,7 +1070,16 @@ const PlainRowView = memo(function PlainRowView({
     case "group-empty":
       return (
         <div className="session-tree-row session-tree-group-empty" style={style} data-row-key={row.key}>
-          {t("sidebar.noLiveSessions")}
+          <span className="session-tree-group-empty-label">{t("sidebar.noLiveSessions")}</span>
+          {!row.project.pinned && (
+            <button
+              type="button"
+              className="session-tree-more-toggle"
+              onClick={() => handlers.current.onPinEmptyGroup(row.project)}
+            >
+              {t("sidebar.pinToKeep")}
+            </button>
+          )}
         </div>
       );
     case "footer-open":
