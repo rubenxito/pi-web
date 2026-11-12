@@ -10,8 +10,6 @@ import { splitNoticeLinks, splitNoticeText } from "@/lib/notice-text";
 import { EXTENSION_DIALOG_BASE_WIDTH, fitExtensionDialogWidth } from "@/lib/extension-dialog-fit";
 import { parsePermissionRequest } from "@/lib/permission-payload";
 import { PermissionDialogView, PermissionReasonView, isPermissionDenyReasonInput } from "@/components/PermissionDialogView";
-import { useDialogArming } from "@/hooks/useDialogArming";
-import { useDialogDrag } from "@/hooks/useDialogDrag";
 import { asBracketedPaste, toTerminalKeyData } from "@/lib/terminal-input";
 import { collapsesProcessDetails, countToolCallBlocks, getDisplayableAssistantBlocks, hasAssistantAnswer, isHiddenCustomMessage, isMessageGroupAnchor, splitFinalAssistantBlocks, liveOutputPreview, LIVE_OUTPUT_PREVIEW_LINES } from "@/lib/message-display";
 import { extractTurnWrittenFiles, type WrittenFile } from "@/lib/turn-written-files";
