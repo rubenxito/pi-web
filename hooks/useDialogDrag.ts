@@ -113,10 +113,14 @@ export function useDialogDrag(cardRef: RefObject<HTMLElement | null>, options: {
         EDGE_KEEP_PX - cardRect.width,
         paneRect.width - EDGE_KEEP_PX,
       ),
+      // The header strip is the only handle (drag, and the buttons on it), so
+      // its top may never sit above the pane: the app's top bar overlaps that
+      // area and would cover it. The bottom is allowed to overflow (content
+      // scrolls), but EDGE_KEEP_PX of the card always stays in the pane.
       y: clamp(
         anchorRef.current.y,
-        -cardRect.height + EDGE_KEEP_PX,
-        paneRect.height - EDGE_KEEP_PX,
+        0,
+        Math.max(0, paneRect.height - EDGE_KEEP_PX),
       ),
     };
     if (clamped.x !== anchorRef.current.x || clamped.y !== anchorRef.current.y) setAnchor(clamped);
