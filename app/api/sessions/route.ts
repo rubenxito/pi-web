@@ -39,7 +39,6 @@ export async function GET(req: Request) {
     perf?.span("scan+projects");
     const sessions = withSubagentDisplayStatus(mergeSessionLists(persistedSessions, runtimeSessions));
     return perf?.attach(jsonResponse(
-      req,
       {
         sessions,
         sessionListVersion,
@@ -49,7 +48,6 @@ export async function GET(req: Request) {
       },
       { headers: { "Cache-Control": "no-store" } },
     )) ?? jsonResponse(
-      req,
       {
         sessions,
         sessionListVersion,
