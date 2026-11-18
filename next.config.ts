@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
     // up to 100 MB per request, so raise the buffer above that or large uploads
     // are truncated and fail with "Failed to parse body as FormData."
     proxyClientMaxBodySize: "128mb",
+    // Keep `next upgrade --agent` on the security policy, so a patched release
+    // is what gets flagged instead of a feature upgrade.
+    agentUpgrade: "security",
   },
   // next/image is only used for the static logo, so the /_next/image optimizer
   // (and its sharp/libheif attack surface, see GHSA-2xp9-vwfh-vxw4) is not needed.
